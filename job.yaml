@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-image
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: build-rpi-container-image-builder
+    spec:
+      restartPolicy: Never
+
+      containers:
+      - name: build
+        image: nazarewk/buildah-arm64:v1.14.8
+        imagePullPolicy: Always
+
+        securityContext:
+          privileged: true
+
+        env:
+        - name: BUILDAH_ISOLATION
+          value: chroot
+        - name: IMAGE_REPOSITORY
+          value: nazarewk/rpi-container-image-builder
+        - name: APP_VERSION
+          value: '0.0.1'
+        - name: IMAGE
+          value: "$(IMAGE_REPOSITORY):v$(APP_VERSION)"
+
+        command:
+        - /bin/bash
+        - -xeEuo
+        - pipefail
+        - -c
+        - |-
+          buildah bud -t "${IMAGE}" .
+          buildah push --authfile /repository-auth-secrets/auth.json "${IMAGE}"
+
+        workingDir: /build
+        volumeMounts:
+        - name: sources
+          mountPath: /build
+        - name: repository-auth-secrets
+          mountPath: /repository-auth-secrets
+
+      volumes:
+      - name: sources
+        configMap:
+          name: sources
+      - name: repository-auth-secrets
+        secret:
+          secretName: repository-auth-secrets
