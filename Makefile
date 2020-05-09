@@ -1,15 +1,19 @@
-.ONESHELL:
+NAME ?= build-rpi-container-image-builder
 
+.ONESHELL:
 all: auth.json
 
 auth.json:
 	jq -S '{auths: {"docker.io": .auths["docker.io"]}}' ~/.docker/config.json > auth.json
 
-logs:
-	kubectl -n build-rpi-container-image-builder logs --tail=-1 --follow -l app=build-rpi-container-image-builder
+get-pods:
+	kubectl -n ${NAME} get pod -o wide
+
+get-logs:
+	kubectl -n ${NAME} logs --tail=-1 --follow -l app=${NAME}
 
 rebuild: auth.json
-	kubectl -n build-rpi-container-image-builder delete job -l app=build-rpi-container-image-builder
+	kubectl -n ${NAME} delete job -l app=${NAME}
 	kubectl apply -k .
 
 build: auth.json

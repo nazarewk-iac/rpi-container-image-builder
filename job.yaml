@@ -35,7 +35,8 @@ spec:
         - pipefail
         - -c
         - |-
-          buildah bud -t "${IMAGE}" .
+          # see for --squash : https://github.com/containers/image/issues/733
+          buildah bud --squash -t "${IMAGE}" .
           buildah push --authfile /repository-auth-secrets/auth.json "${IMAGE}"
 
         workingDir: /build
